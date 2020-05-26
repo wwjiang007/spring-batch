@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -35,7 +36,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.Nullable;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * @author mminella
@@ -51,6 +56,18 @@ public class JobLauncherTestUtilsTests {
 		JobExecution execution = testUtils.launchStep("step1");
 
 		assertEquals(ExitStatus.COMPLETED, execution.getExitStatus());
+	}
+
+	@Test
+	public void getUniqueJobParameters_doesNotRepeatJobParameters() {
+		ApplicationContext context = new AnnotationConfigApplicationContext(TestJobConfiguration.class);
+		JobLauncherTestUtils testUtils = context.getBean(JobLauncherTestUtils.class);
+		Set<JobParameters> jobParametersSeen = new HashSet<>();
+		for (int i = 0; i < 10_000; i++) {
+			JobParameters jobParameters = testUtils.getUniqueJobParameters();
+			assertFalse(jobParametersSeen.contains(jobParameters));
+			jobParametersSeen.add(jobParameters);
+		}
 	}
 
 	@Configuration

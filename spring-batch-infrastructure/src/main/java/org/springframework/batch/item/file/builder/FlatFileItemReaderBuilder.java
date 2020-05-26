@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -469,12 +469,12 @@ public class FlatFileItemReaderBuilder<T> {
 			reader.setLineMapper(this.lineMapper);
 		}
 		else {
-			Assert.state(validatorValue == 1 || validatorValue == 2 || validatorValue == 4,
+			Assert.state(validatorValue == 0 || validatorValue == 1 || validatorValue == 2 || validatorValue == 4,
 					"Only one LineTokenizer option may be configured");
 
 			DefaultLineMapper<T> lineMapper = new DefaultLineMapper<>();
 
-			if(this.lineTokenizer != null && this.fieldSetMapper != null) {
+			if(this.lineTokenizer != null) {
 				lineMapper.setLineTokenizer(this.lineTokenizer);
 			}
 			else if(this.fixedLengthBuilder != null) {
