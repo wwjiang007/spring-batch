@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2010 the original author or authors.
+ * Copyright 2008-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemReader;
@@ -89,6 +90,10 @@ public abstract class AbstractIoSampleTests {
 
 	protected JobParameters getUniqueJobParameters() {
 		return jobLauncherTestUtils.getUniqueJobParameters();
+	}
+
+	protected JobParametersBuilder getUniqueJobParametersBuilder() {
+		return jobLauncherTestUtils.getUniqueJobParametersBuilder();
 	}
 
 	/**

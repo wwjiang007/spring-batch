@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2007 the original author or authors.
+ * Copyright 2006-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class MultiResourceFunctionalTests extends AbstractIoSampleTests {
 
 	@Override
 	protected void pointReaderToOutput(ItemReader<CustomerCredit> reader) {
-		JobParameters jobParameters = new JobParametersBuilder(super.getUniqueJobParameters()).addString(
+		JobParameters jobParameters = super.getUniqueJobParametersBuilder().addString(
 				"input.file.path", "file:build/test-outputs/multiResourceOutput.csv.*").toJobParameters();
 		StepExecution stepExecution = MetaDataInstanceFactory.createStepExecution(jobParameters);
 		StepSynchronizationManager.close();
@@ -46,7 +46,7 @@ public class MultiResourceFunctionalTests extends AbstractIoSampleTests {
 
 	@Override
 	protected JobParameters getUniqueJobParameters() {
-		JobParametersBuilder builder = new JobParametersBuilder(super.getUniqueJobParameters());
+		JobParametersBuilder builder = super.getUniqueJobParametersBuilder();
 		return builder.addString("input.file.path", "classpath:data/iosample/input/delimited*.csv").addString(
 				"output.file.path", "file:build/test-outputs/multiResourceOutput.csv").toJobParameters();
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,28 @@ import java.util.List;
 
 import javax.xml.stream.XMLInputFactory;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.batch.item.xml.StaxEventItemReader;
-import org.springframework.batch.item.xml.StaxUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.util.xml.StaxUtils;
 
 /**
  * A fluent builder for the {@link StaxEventItemReader}
  *
  * @author Michael Minella
  * @author Glenn Renfro
+ * @author Mahmoud Ben Hassine
+ * @author Parikshit Dutta
  * @since 4.0
  */
 public class StaxEventItemReaderBuilder<T> {
+
+	protected Log logger = LogFactory.getLog(getClass());
 
 	private boolean strict = true;
 
@@ -53,7 +60,9 @@ public class StaxEventItemReaderBuilder<T> {
 
 	private int currentItemCount;
 
-	private XMLInputFactory xmlInputFactory = StaxUtils.createXmlInputFactory();
+	private XMLInputFactory xmlInputFactory = StaxUtils.createDefensiveInputFactory();
+
+	private String encoding = StaxEventItemReader.DEFAULT_ENCODING;
 
 	/**
 	 * Configure if the state of the {@link org.springframework.batch.item.ItemStreamSupport}
@@ -194,24 +203,38 @@ public class StaxEventItemReaderBuilder<T> {
 	}
 
 	/**
+	 * Encoding for the input file. Defaults to {@link StaxEventItemReader#DEFAULT_ENCODING}.
+	 *
+	 * @param encoding String encoding algorithm
+	 * @return the current instance of the builder
+	 * @see StaxEventItemReader#setEncoding(String)
+	 */
+	public StaxEventItemReaderBuilder<T> encoding(String encoding) {
+		this.encoding = encoding;
+
+		return this;
+	}
+
+	/**
 	 * Validates the configuration and builds a new {@link StaxEventItemReader}
 	 *
 	 * @return a new instance of the {@link StaxEventItemReader}
 	 */
 	public StaxEventItemReader<T> build() {
-		Assert.notNull(this.resource, "A resource is required.");
-
 		StaxEventItemReader<T> reader = new StaxEventItemReader<>();
+
+		if (this.resource == null) {
+			logger.debug("The resource is null. This is only a valid scenario when " +
+					"injecting resource later as in when using the MultiResourceItemReader");
+		}
 
 		if (this.saveState) {
 			Assert.state(StringUtils.hasText(this.name), "A name is required when saveState is set to true.");
 		}
-		else {
-			reader.setName(this.name);
-		}
 
 		Assert.notEmpty(this.fragmentRootElements, "At least one fragment root element is required");
 
+		reader.setName(this.name);
 		reader.setSaveState(this.saveState);
 		reader.setResource(this.resource);
 		reader.setFragmentRootElementNames(
@@ -222,6 +245,7 @@ public class StaxEventItemReaderBuilder<T> {
 		reader.setCurrentItemCount(this.currentItemCount);
 		reader.setMaxItemCount(this.maxItemCount);
 		reader.setXmlInputFactory(this.xmlInputFactory);
+		reader.setEncoding(this.encoding);
 
 		return reader;
 	}

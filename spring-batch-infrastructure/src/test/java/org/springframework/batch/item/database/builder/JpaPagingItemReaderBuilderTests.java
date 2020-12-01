@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 package org.springframework.batch.item.database.builder;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
@@ -26,6 +28,7 @@ import org.junit.Test;
 
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.database.orm.JpaNamedQueryProvider;
 import org.springframework.batch.item.database.orm.JpaNativeQueryProvider;
 import org.springframework.batch.item.sample.Foo;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -48,6 +51,8 @@ import static org.junit.Assert.fail;
 
 /**
  * @author Michael Minella
+ * @author Parikshit Dutta
+ * @author Mahmoud Ben Hassine
  */
 public class JpaPagingItemReaderBuilderTests {
 
@@ -135,7 +140,41 @@ public class JpaPagingItemReaderBuilderTests {
 	}
 
 	@Test
-	public void testConfigurationQueryProvider() throws Exception {
+	public void testConfigurationNamedQueryProvider() throws Exception {
+		JpaNamedQueryProvider<Foo> namedQueryProvider = new JpaNamedQueryProvider<>();
+		namedQueryProvider.setNamedQuery("allFoos");
+		namedQueryProvider.setEntityClass(Foo.class);
+		namedQueryProvider.afterPropertiesSet();
+
+		JpaPagingItemReader<Foo> reader = new JpaPagingItemReaderBuilder<Foo>()
+				.name("fooReader")
+				.entityManagerFactory(this.entityManagerFactory)
+				.queryProvider(namedQueryProvider)
+				.build();
+
+		reader.afterPropertiesSet();
+
+		ExecutionContext executionContext = new ExecutionContext();
+		reader.open(executionContext);
+
+		Foo foo;
+		List<Foo> foos = new ArrayList<>();
+
+		while((foo = reader.read()) != null) {
+			foos.add(foo);
+		}
+
+		reader.update(executionContext);
+		reader.close();
+
+		int id = 0;
+		for (Foo testFoo:foos) {
+			assertEquals(++id, testFoo.getId());
+		}
+	}
+
+	@Test
+	public void testConfigurationNativeQueryProvider() throws Exception {
 
 		JpaNativeQueryProvider<Foo> provider = new JpaNativeQueryProvider<>();
 		provider.setEntityClass(Foo.class);

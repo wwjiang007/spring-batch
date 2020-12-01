@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.springframework.batch.sample.iosample;
 
 import org.junit.runner.RunWith;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.scope.context.StepSynchronizationManager;
 import org.springframework.batch.item.ItemReader;
@@ -32,7 +31,7 @@ public class RepositoryFunctionalTests extends AbstractIoSampleTests {
 
 	@Override
 	protected void pointReaderToOutput(ItemReader<CustomerCredit> reader) {
-		JobParameters jobParameters = new JobParametersBuilder(super.getUniqueJobParameters()).addDouble("credit", 0.)
+		JobParameters jobParameters = super.getUniqueJobParametersBuilder().addDouble("credit", 0.)
 				.toJobParameters();
 		StepExecution stepExecution = MetaDataInstanceFactory.createStepExecution(jobParameters);
 		StepSynchronizationManager.close();
@@ -41,6 +40,6 @@ public class RepositoryFunctionalTests extends AbstractIoSampleTests {
 
 	@Override
 	protected JobParameters getUniqueJobParameters() {
-		return new JobParametersBuilder(super.getUniqueJobParameters()).addString("credit", "10000").toJobParameters();
+		return super.getUniqueJobParametersBuilder().addString("credit", "10000").toJobParameters();
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,22 @@ package org.springframework.batch.item.data;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bson.Document;
+import org.bson.types.ObjectId;
+
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.data.mongodb.core.BulkOperations;
+import org.springframework.data.mongodb.core.BulkOperations.BulkMode;
+import org.springframework.data.mongodb.core.FindAndReplaceOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.convert.MongoConverter;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -42,10 +52,13 @@ import org.springframework.util.StringUtils;
  * </p>
  *
  * @author Michael Minella
+ * @author Parikshit Dutta
+ * @author Mahmoud Ben Hassine
  *
  */
 public class MongoItemWriter<T> implements ItemWriter<T>, InitializingBean {
 
+	private static final String ID_KEY = "_id";
 	private MongoOperations template;
 	private final Object bufferKey;
 	private String collection;
@@ -119,32 +132,54 @@ public class MongoItemWriter<T> implements ItemWriter<T>, InitializingBean {
 	 * @param items the list of items to be persisted.
 	 */
 	protected void doWrite(List<? extends T> items) {
-		if(! CollectionUtils.isEmpty(items)) {
-			if(delete) {
-				if(StringUtils.hasText(collection)) {
-					for (Object object : items) {
-						template.remove(object, collection);
-					}
-				}
-				else {
-					for (Object object : items) {
-						template.remove(object);
-					}
-				}
+		if (!CollectionUtils.isEmpty(items)) {
+			if (this.delete) {
+				delete(items);
 			}
 			else {
-				if(StringUtils.hasText(collection)) {
-					for (Object object : items) {
-						template.save(object, collection);
-					}
-				}
-				else {
-					for (Object object : items) {
-						template.save(object);
-					}
-				}
+				saveOrUpdate(items);
 			}
 		}
+	}
+
+	private void delete(List<? extends T> items) {
+		BulkOperations bulkOperations = initBulkOperations(BulkMode.ORDERED, items.get(0));
+		MongoConverter mongoConverter = this.template.getConverter();
+		for (Object item : items) {
+			Document document = new Document();
+			mongoConverter.write(item, document);
+			Object objectId = document.get(ID_KEY);
+			if (objectId != null) {
+				Query query = new Query().addCriteria(Criteria.where(ID_KEY).is(objectId));
+				bulkOperations.remove(query);
+			}
+		}
+		bulkOperations.execute();
+	}
+
+	private void saveOrUpdate(List<? extends T> items) {
+		BulkOperations bulkOperations = initBulkOperations(BulkMode.ORDERED, items.get(0));
+		MongoConverter mongoConverter = this.template.getConverter();
+		FindAndReplaceOptions upsert = new FindAndReplaceOptions().upsert();
+		for (Object item : items) {
+			Document document = new Document();
+			mongoConverter.write(item, document);
+			Object objectId = document.get(ID_KEY) != null ? document.get(ID_KEY) : new ObjectId();
+			Query query = new Query().addCriteria(Criteria.where(ID_KEY).is(objectId));
+			bulkOperations.replaceOne(query, document, upsert);
+		}
+		bulkOperations.execute();
+	}
+
+	private BulkOperations initBulkOperations(BulkMode bulkMode, Object item) {
+		BulkOperations bulkOperations;
+		if (StringUtils.hasText(this.collection)) {
+			bulkOperations = this.template.bulkOps(bulkMode, this.collection);
+		}
+		else {
+			bulkOperations = this.template.bulkOps(bulkMode, ClassUtils.getUserClass(item));
+		}
+		return bulkOperations;
 	}
 
 	private boolean transactionActive() {

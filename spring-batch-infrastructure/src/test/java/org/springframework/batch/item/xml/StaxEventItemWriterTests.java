@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2014 the original author or authors.
+ * Copyright 2008-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,9 @@ import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link StaxEventItemWriter}.
+ *
+ * @author Parikshit Dutta
+ * @author Mahmoud Ben Hassine
  */
 public class StaxEventItemWriterTests {
 
@@ -135,6 +138,35 @@ public class StaxEventItemWriterTests {
 		StaxEventItemWriter<String> writer = new StaxEventItemWriter<>();
 
 		writer.write(Collections.singletonList("foo"));
+	}
+
+	@Test
+	public void testStandaloneDeclarationInHeaderWhenNotSet() throws Exception {
+		writer.open(executionContext);
+		writer.write(items);
+		writer.close();
+		String content = getOutputFileContent(writer.getEncoding(), false);
+		assertFalse(content.contains("standalone="));
+	}
+
+	@Test
+	public void testStandaloneDeclarationInHeaderWhenSetToTrue() throws Exception {
+		writer.setStandalone(true);
+		writer.open(executionContext);
+		writer.write(items);
+		writer.close();
+		String content = getOutputFileContent(writer.getEncoding(), false);
+		assertTrue(content.contains("standalone='yes'"));
+	}
+
+	@Test
+	public void testStandaloneDeclarationInHeaderWhenSetToFalse() throws Exception {
+		writer.setStandalone(false);
+		writer.open(executionContext);
+		writer.write(items);
+		writer.close();
+		String content = getOutputFileContent(writer.getEncoding(), false);
+		assertTrue(content.contains("standalone='no'"));
 	}
 
 	/**
@@ -982,11 +1014,21 @@ public class StaxEventItemWriterTests {
 	 * @return output file content as String
 	 */
 	private String getOutputFileContent(String encoding) throws IOException {
-		String value = FileUtils.readFileToString(resource.getFile(), encoding);
-		value = value.replace("<?xml version='1.0' encoding='" + encoding + "'?>", "");
-		return value;
+		return getOutputFileContent(encoding, true);
 	}
 
+	/**
+	 * @param encoding the encoding
+	 * @param discardHeader the flag to strip XML header
+	 * @return output file content as String
+	 */
+	private String getOutputFileContent(String encoding, boolean discardHeader) throws IOException {
+		String value = FileUtils.readFileToString(resource.getFile(), encoding);
+		if (discardHeader) {
+			return value.replaceFirst("<\\?xml.*?\\?>", "");
+		}
+		return value;
+	}
 
 	/**
 	 * @return new instance of fully configured writer

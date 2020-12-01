@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2020 the original author or authors.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -101,6 +101,19 @@ public class KafkaItemWriterTests {
 
 		verify(this.kafkaTemplate).sendDefault(items.get(0), null);
 		verify(this.kafkaTemplate).sendDefault(items.get(1), null);
+	}
+
+	@Test
+	public void testKafkaTemplateCanBeReferencedFromSubclass() {
+		KafkaItemWriter<String, String> kafkaItemWriter = new KafkaItemWriter<String, String>() {
+			@Override
+			protected void writeKeyValue(String key, String value) {
+				this.kafkaTemplate.sendDefault(key, value);
+			}
+		};
+		kafkaItemWriter.setKafkaTemplate(this.kafkaTemplate);
+		kafkaItemWriter.writeKeyValue("k", "v");
+		verify(this.kafkaTemplate).sendDefault("k", "v");
 	}
 
 	static class KafkaItemKeyMapper implements Converter<String, String> {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2019 the original author or authors.
+ * Copyright 2008-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.oxm.Unmarshaller;
 import org.springframework.oxm.UnmarshallingFailureException;
 import org.springframework.oxm.XmlMappingException;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.xml.StaxUtils;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.FactoryConfigurationError;
@@ -43,6 +44,9 @@ import javax.xml.transform.Source;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -138,6 +142,26 @@ public class StaxEventItemReaderTests {
 	public void testFragmentWrapping() throws Exception {
 		source.afterPropertiesSet();
 		source.open(executionContext);
+		// see asserts in the mock unmarshaller
+		assertNotNull(source.read());
+		assertNotNull(source.read());
+		assertNull(source.read()); // there are only two fragments
+
+		source.close();
+	}
+
+	/**
+	 * Regular usage scenario with custom encoding.
+	 */
+	@Test
+	public void testCustomEncoding() throws Exception {
+		Charset encoding = StandardCharsets.ISO_8859_1;
+		ByteBuffer xmlResource = encoding.encode(xml);
+		source.setResource(new ByteArrayResource(xmlResource.array()));
+		source.setEncoding(encoding.name());
+		source.afterPropertiesSet();
+		source.open(executionContext);
+
 		// see asserts in the mock unmarshaller
 		assertNotNull(source.read());
 		assertNotNull(source.read());
@@ -333,7 +357,7 @@ public class StaxEventItemReaderTests {
 	@Test
 	public void testMoveCursorToNextFragment() throws XMLStreamException, FactoryConfigurationError, IOException {
 		Resource resource = new ByteArrayResource(xml.getBytes());
-		XMLEventReader reader = StaxUtils.createXmlInputFactory().createXMLEventReader(resource.getInputStream());
+		XMLEventReader reader = StaxUtils.createDefensiveInputFactory().createXMLEventReader(resource.getInputStream());
 
 		final int EXPECTED_NUMBER_OF_FRAGMENTS = 2;
 		for (int i = 0; i < EXPECTED_NUMBER_OF_FRAGMENTS; i++) {
@@ -350,7 +374,7 @@ public class StaxEventItemReaderTests {
 	@Test
 	public void testMoveCursorToNextFragmentOnEmpty() throws XMLStreamException, FactoryConfigurationError, IOException {
 		Resource resource = new ByteArrayResource(emptyXml.getBytes());
-		XMLEventReader reader = StaxUtils.createXmlInputFactory().createXMLEventReader(resource.getInputStream());
+		XMLEventReader reader = StaxUtils.createDefensiveInputFactory().createXMLEventReader(resource.getInputStream());
 
 		assertFalse(source.moveCursorToNextFragment(reader));
 	}
@@ -361,7 +385,7 @@ public class StaxEventItemReaderTests {
 	@Test
 	public void testMoveCursorToNextFragmentOnMissing() throws XMLStreamException, FactoryConfigurationError, IOException {
 		Resource resource = new ByteArrayResource(missingXml.getBytes());
-		XMLEventReader reader = StaxUtils.createXmlInputFactory().createXMLEventReader(resource.getInputStream());
+		XMLEventReader reader = StaxUtils.createDefensiveInputFactory().createXMLEventReader(resource.getInputStream());
 		assertFalse(source.moveCursorToNextFragment(reader));
 	}
 

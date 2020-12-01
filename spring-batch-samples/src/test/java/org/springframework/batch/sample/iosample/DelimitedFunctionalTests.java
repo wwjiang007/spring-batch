@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2007 the original author or authors.
+ * Copyright 2006-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.batch.sample.iosample;
 
 import org.junit.runner.RunWith;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.scope.context.StepSynchronizationManager;
 import org.springframework.batch.item.ItemReader;
@@ -38,7 +37,7 @@ public class DelimitedFunctionalTests extends AbstractIoSampleTests {
 
 	@Override
 	protected void pointReaderToOutput(ItemReader<CustomerCredit> reader) {
-		JobParameters jobParameters = new JobParametersBuilder(super.getUniqueJobParameters()).addString("inputFile",
+		JobParameters jobParameters = super.getUniqueJobParametersBuilder().addString("inputFile",
 				"file:./build/test-outputs/delimitedOutput.csv").toJobParameters();
 		StepExecution stepExecution = MetaDataInstanceFactory.createStepExecution(jobParameters);
 		StepSynchronizationManager.close();
@@ -47,7 +46,7 @@ public class DelimitedFunctionalTests extends AbstractIoSampleTests {
 
 	@Override
 	protected JobParameters getUniqueJobParameters() {
-		return new JobParametersBuilder(super.getUniqueJobParameters()).addString("inputFile",
+		return super.getUniqueJobParametersBuilder().addString("inputFile",
 				"data/iosample/input/delimited.csv").addString("outputFile",
 				"file:./build/test-outputs/delimitedOutput.csv").toJobParameters();
 	}
